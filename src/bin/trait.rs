@@ -14,9 +14,9 @@ impl InfoHandler {
 }
 
 impl Handle for InfoHandler {
-    type Event = Info;
+    type EventType = Info;
 
-    fn handle(&self, event: Self::Event) {
+    fn handle(&self, event: Self::EventType) {
         self.log(event);
     }
 }

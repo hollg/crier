@@ -20,9 +20,9 @@ impl<T: Event> DynEvent for T {
 
 /// Trait for an object which can subscribe to a Producer for specific events
 pub trait Handle {
-    type Event: Event;
+    type EventType: Event;
 
-    fn handle(&self, event: Self::Event) -> ();
+    fn handle(&self, event: Self::EventType) -> ();
 }
 
 /// Wrapper for code that handles Events of a specific type.
@@ -59,7 +59,7 @@ impl<T: Event> DynHandle for Handler<T> {
 impl<T, U> DynHandle for U
 where
     T: Event,
-    U: Handle<Event = T> + Send + Sync,
+    U: Handle<EventType = T> + Send + Sync,
 {
     fn dyn_handle(&self, event: &dyn DynEvent) {
         if let Some(event_data) = event.get_data().downcast_ref::<T>() {

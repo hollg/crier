@@ -10,8 +10,7 @@ There are two ways to subscribe to a `Producer` for events:
 ## Example
 ```rust
 
-use gawk::{Event, Handler, Publisher};
-use std::sync::Arc;
+use gawk::{Event, Handler, Publisher, Handle};
 
 #[derive(Copy, Clone)]
 struct Info(&'static str);
@@ -23,19 +22,19 @@ impl Event for Warning {}
 
 struct InfoHandler {}
 
-impl Handle for InfoHandler {
-    type Event = Info;
-
-    fn handle(&self, event: Self::Event) {
-        self.log(event);
+impl InfoHandler {
+    fn log(&self, event: Info) {
+        println!("Info: {}", event.0)
     }
 }
 
+impl Handle for InfoHandler {
+    type EventType = Info;
 
-#[derive(Copy, Clone)]
-struct Warning(&'static str);
-
-impl Event for Warning {}
+    fn handle(&self, event: Self::EventType) {
+        self.log(event);
+    }
+}
 
 fn main() {
     let mut publisher = Publisher::default();
