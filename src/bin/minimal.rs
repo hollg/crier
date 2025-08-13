@@ -20,8 +20,10 @@ fn main() {
     let info_id = publisher.subscribe(Arc::new(info_handler));
     let warning_id = publisher.subscribe(Arc::new(warning_handler));
 
-    publisher.publish(Arc::new(Warning("Looks sus")));
-    publisher.publish(Arc::new(Info("All good")));
+    // `publish` returns a Result with the Err variant containing a Vec of any errors returned
+    // by triggered handlers
+    let _ = publisher.publish(Arc::new(Warning("Looks sus")));
+    let _ = publisher.publish(Arc::new(Info("All good")));
 
     publisher.unsubscribe(info_id);
     publisher.unsubscribe(warning_id);

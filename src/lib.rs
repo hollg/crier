@@ -94,10 +94,15 @@ impl Publisher {
 
     /// Publish an event to all subscribed handlers, utilizing as many threads as possible to run
     /// handlers in parallel
-    pub fn publish(&self, event: Arc<dyn DynEvent>) {
+    pub fn publish(
+        &self,
+        event: Arc<dyn DynEvent>,
+    ) -> Result<(), Vec<Box<dyn std::any::Any + Send + 'static>>> {
         let max_threads = thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(1);
+
+        let mut errors = Vec::new();
 
         thread::scope(|s| {
             let mut handles = Vec::new();
@@ -109,10 +114,18 @@ impl Publisher {
 
                 if handles.len() == max_threads {
                     for handle in handles.drain(..) {
-                        handle.join().unwrap();
+                        if let Err(e) = handle.join() {
+                            errors.push(e)
+                        }
                     }
                 }
             }
         });
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
