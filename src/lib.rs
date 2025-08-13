@@ -18,6 +18,13 @@ impl<T: Event> DynEvent for T {
     }
 }
 
+/// Trait for an object which can subscribe to a Producer for specific events
+pub trait Handle {
+    type Event: Event;
+
+    fn handle(&self, event: Self::Event) -> ();
+}
+
 /// Wrapper for code that handles Events of a specific type.
 pub struct Handler<T: Event> {
     /// Complex seeming type allows closures?
@@ -37,14 +44,26 @@ impl<T: Event> Handler<T> {
 
 /// Dynamically typed Handler. Used internally to allow Publishers to support Events and Handlers
 /// of multiple different types.
-pub trait DynHandler: Send + Sync {
-    fn dyn_handle(&self, _event: &dyn DynEvent) {}
+pub trait DynHandle: Send + Sync {
+    fn dyn_handle(&self, _event: &dyn DynEvent) -> ();
 }
 
-impl<T: Event> DynHandler for Handler<T> {
+impl<T: Event> DynHandle for Handler<T> {
     fn dyn_handle(&self, event: &dyn DynEvent) {
         if let Some(event_data) = event.get_data().downcast_ref::<T>() {
             (self.handle)(event_data.clone())
+        }
+    }
+}
+
+impl<T, U> DynHandle for U
+where
+    T: Event,
+    U: Handle<Event = T> + Send + Sync,
+{
+    fn dyn_handle(&self, event: &dyn DynEvent) {
+        if let Some(event_data) = event.get_data().downcast_ref::<T>() {
+            self.handle(event_data.clone())
         }
     }
 }
@@ -73,13 +92,13 @@ pub struct Publisher {
     handler_count: usize,
     // we use Arc so that a reference to the handler can be passed to other threads for
     // execution
-    handlers: HashMap<usize, Arc<dyn DynHandler>>,
+    handlers: HashMap<usize, Arc<dyn DynHandle>>,
 }
 
 impl Publisher {
     /// Subscribe a handler to the publisher so that the handler receives all published events.
     /// Returns the ID needed to `unsubscribe` the handler.
-    pub fn subscribe(&mut self, handler: Arc<dyn DynHandler>) -> usize {
+    pub fn subscribe(&mut self, handler: Arc<dyn DynHandle>) -> usize {
         let id = self.handler_count + 1;
         self.handlers.insert(id, handler);
         self.handler_count = id;
