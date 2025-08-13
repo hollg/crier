@@ -1,5 +1,4 @@
 use gawk::{Event, Handle, Publisher};
-use std::sync::Arc;
 
 #[derive(Copy, Clone)]
 struct Info(&'static str);
@@ -26,9 +25,9 @@ fn main() {
     let mut publisher = Publisher::default();
 
     let info_handler = InfoHandler {};
-    let handler_id = publisher.subscribe(Arc::new(info_handler));
+    let handler_id = publisher.subscribe(info_handler);
 
-    let _ = publisher.publish(Arc::new(Info("All good")));
+    let _ = publisher.publish(Info("All good"));
 
     publisher.unsubscribe(handler_id);
 }

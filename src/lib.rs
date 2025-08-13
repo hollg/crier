@@ -80,9 +80,9 @@ where
 ///
 /// let pause_handler = Handler::new(|_event: GamePaused| println!("Game paused"));
 /// let publisher = Publisher::default();
-/// let pause_handler_id = publisher.subscribe(Arc::new(pause_handler));
+/// let pause_handler_id = publisher.subscribe(pause_handler);
 ///
-/// publisher.publish(Arc::new(GamePaused {}));
+/// publisher.publish(GamePaused {});
 ///
 /// publisher.unsubscribe(pause_handler_id);
 ///
@@ -98,7 +98,11 @@ pub struct Publisher {
 impl Publisher {
     /// Subscribe a handler to the publisher so that the handler receives all published events.
     /// Returns the ID needed to `unsubscribe` the handler.
-    pub fn subscribe(&mut self, handler: Arc<dyn DynHandle>) -> usize {
+    pub fn subscribe<T>(&mut self, handler: T) -> usize
+    where
+        T: DynHandle + 'static,
+    {
+        let handler: Arc<dyn DynHandle> = Arc::new(handler);
         let id = self.handler_count + 1;
         self.handlers.insert(id, handler);
         self.handler_count = id;
@@ -113,10 +117,11 @@ impl Publisher {
 
     /// Publish an event to all subscribed handlers, utilizing as many threads as possible to run
     /// handlers in parallel
-    pub fn publish(
-        &self,
-        event: Arc<dyn DynEvent>,
-    ) -> Result<(), Vec<Box<dyn std::any::Any + Send + 'static>>> {
+    pub fn publish<T>(&self, event: T) -> Result<(), Vec<Box<dyn std::any::Any + Send + 'static>>>
+    where
+        T: DynEvent,
+    {
+        let event: Arc<dyn DynEvent> = Arc::new(event);
         let max_threads = thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(1);

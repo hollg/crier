@@ -43,11 +43,11 @@ fn main() {
     let info_handler = InfoHandler {};
     let warning_handler = Handler::new(|warning: Warning| println!("Warning: {}", warning.0));
 
-    let info_id = publisher.subscribe(Arc::new(info_handler));
-    let warning_id = publisher.subscribe(Arc::new(warning_handler));
+    let info_id = publisher.subscribe(info_handler);
+    let warning_id = publisher.subscribe(warning_handler);
 
-    let _ = publisher.publish(Arc::new(Warning("Looks sus")));
-    let _ = publisher.publish(Arc::new(Info("All good"))); 
+    let _ = publisher.publish(Warning("Looks sus"));
+    let _ = publisher.publish(Info("All good")); 
 
     publisher.unsubscribe(info_id);
     publisher.unsubscribe(warning_id);

@@ -1,5 +1,4 @@
 use gawk::{Event, Handler, Publisher};
-use std::sync::Arc;
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
@@ -17,10 +16,10 @@ fn main() {
 
     let warning_handler = Handler::new(|info: Warning| println!("Warning: {}", info.0));
 
-    let warning_id = publisher.subscribe(Arc::new(warning_handler));
+    let warning_id = publisher.subscribe(warning_handler);
 
-    let _ = publisher.publish(Arc::new(Warning("Looks sus")));
-    let _ = publisher.publish(Arc::new(Info("All good"))); // This event will be ignored
+    let _ = publisher.publish(Warning("Looks sus"));
+    let _ = publisher.publish(Info("All good")); // This event will be ignored
 
     publisher.unsubscribe(warning_id);
 }
