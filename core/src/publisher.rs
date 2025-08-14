@@ -1,6 +1,10 @@
-use std::{collections::HashMap, sync::Arc, thread};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    thread,
+};
 
-use crate::{DynEvent, DynHandle};
+use crate::{handler::DynHandleMut, DynEvent, DynHandle};
 
 /// Publishes all Events to all subscribed Handlers that accept Events of that type
 /// # Examples
@@ -23,9 +27,11 @@ use crate::{DynEvent, DynHandle};
 #[derive(Default)]
 pub struct Publisher {
     handler_count: usize,
+    handler_mut_count: usize,
     // we use Arc so that a reference to the handler can be passed to other threads for
     // execution
     handlers: HashMap<usize, Arc<dyn DynHandle>>,
+    handlers_mut: HashMap<usize, Arc<Mutex<dyn DynHandleMut>>>,
 }
 
 impl Publisher {
@@ -43,14 +49,33 @@ impl Publisher {
         id
     }
 
+    pub fn subscribe_mut<T>(&mut self, handler: T) -> usize
+    where
+        T: DynHandleMut + 'static,
+    {
+        let handler: Arc<Mutex<dyn DynHandleMut>> = Arc::new(Mutex::new(handler));
+        let id = self.handler_mut_count + 1;
+        self.handlers_mut.insert(id, handler);
+        self.handler_mut_count = id;
+
+        id
+    }
+
     /// Remove a handler from the publisher so that it stops receiving events
     pub fn unsubscribe(&mut self, id: usize) {
         self.handlers.remove_entry(&id);
     }
+    /// Remove a mut handler from the publisher so that it stops receiving events
+    pub fn unsubsribe_mut(&mut self, id: usize) {
+        self.handlers_mut.remove_entry(&id);
+    }
 
     /// Publish an event to all subscribed handlers, utilizing as many threads as possible to run
     /// handlers in parallel
-    pub fn publish<T>(&self, event: T) -> Result<(), Vec<Box<dyn std::any::Any + Send + 'static>>>
+    pub fn publish<T>(
+        &mut self,
+        event: T,
+    ) -> Result<(), Vec<Box<dyn std::any::Any + Send + 'static>>>
     where
         T: DynEvent,
     {
@@ -79,12 +104,21 @@ impl Publisher {
                     }
                 }
             }
+
             for handle in handles {
                 if let Err(e) = handle.join().unwrap_or_else(Err) {
                     errors.push(e);
                 }
             }
         });
+
+        for handler_mut in self.handlers_mut.values_mut() {
+            let handler_mut = Arc::clone(handler_mut);
+            let cloned_event = event.clone();
+
+            let mut handler_guard = handler_mut.lock().expect("Handler mutex poisoned");
+            handler_guard.dyn_handle_mut(cloned_event.as_ref());
+        }
 
         if errors.is_empty() {
             Ok(())

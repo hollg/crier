@@ -60,6 +60,28 @@ where
     }
 }
 
+pub trait HandleMut {
+    type EventType: Event;
+
+    fn handle_mut(&mut self, event: Self::EventType) -> ();
+}
+
+pub trait DynHandleMut {
+    fn dyn_handle_mut(&mut self, event: &dyn DynEvent) -> ();
+}
+
+impl<T, U> DynHandleMut for U
+where
+    T: Event,
+    U: HandleMut<EventType = T> + Send + Sync + RefUnwindSafe,
+{
+    fn dyn_handle_mut(&mut self, event: &dyn DynEvent) {
+        if let Some(event_data) = event.get_data().downcast_ref::<T>() {
+            self.handle_mut(event_data.clone())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
