@@ -7,10 +7,9 @@ use crate::{DynEvent, DynHandle};
 /// ```
 /// use gawk::{Event, Handler, Publisher};
 ///
-/// #[derive(Copy, Clone)]
+/// #[derive(Clone, Event)]
 /// struct GamePaused {}
 ///
-/// impl Event for GamePaused {}
 ///
 /// let mut publisher = Publisher::default();
 /// let pause_handler = Handler::new(|_event: GamePaused| println!("Game paused"));

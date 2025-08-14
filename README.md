@@ -13,11 +13,13 @@
 ## Usage
 ### Subscribe a simple closure 
 ```rust
-use gawk::{Event, Handler, Publisher, Handle};
+use gawk::{Event, Handler, Publisher};
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Event)]
 struct Warning(&'static str);
-impl Event for Warning {}
+
+#[derive(Clone, Event)]
+struct Info(&'static str);
 
 fn main() {
     let mut publisher = Publisher::default();
@@ -27,6 +29,9 @@ fn main() {
     // `publish` returns a Result, the error variant of which contains any errors returned by triggered handlers
     let _ = publisher.publish(Warning("Looks sus"));
 
+    // This event will not trigger the warning_handler because it's of the wrong concrete type
+    let _ = publisher.publish(Info("All good"));
+
     publisher.unsubscribe(warning_id);
 }
 
@@ -34,11 +39,10 @@ fn main() {
 
 ### Subscribe a custom type
 ```rust
-use gawk::{Event, Handler, Publisher, Handle};
+use gawk::{Event, Publisher, Handle};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Event)]
 struct Info(&'static str);
-impl Event for Info {}
 
 struct InfoHandler {}
 
@@ -70,7 +74,7 @@ fn main() {
 
 ## TODO:
 - [X] Publisher supports any number of handlers / events of different types
-- [ ] Derive macro for `Event` trait
+- [X] Derive macro for `Event` trait
 - [ ] Optional async feature using Tokio
 - [ ] Support handlers that take a `mut &self` receiver when implementing `Handle` for custom types to enable more complex use cases, e.g. updating some internal state when events are received
 

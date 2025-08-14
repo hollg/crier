@@ -1,9 +1,7 @@
 use gawk::{Event, Handle, Publisher};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Event)]
 struct Info(&'static str);
-
-impl Event for Info {}
 
 struct InfoHandler {}
 
