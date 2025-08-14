@@ -1,4 +1,7 @@
-use std::panic::RefUnwindSafe;
+use std::{
+    panic::RefUnwindSafe,
+    sync::{Arc, Mutex},
+};
 
 use crate::{DynEvent, Event};
 
@@ -11,7 +14,7 @@ pub trait Handle {
 
 /// Wrapper for code that handles Events of a specific type.
 pub struct Handler<T: Event> {
-    /// Complex seeming type allows closures?
+    // closure that takes T and is thread-safe
     handle: Box<dyn Fn(T) + Send + Sync>,
 }
 
@@ -60,6 +63,35 @@ where
     }
 }
 
+/// Trait for an object that can subscribe to a producer for specific events and mutate itself in
+/// its handler function.
+pub trait HandleMut {
+    type EventType: Event;
+
+    fn handle_mut(&mut self, event: Self::EventType) -> ();
+}
+
+/// Dynamically typed HandleMut. Used internally to allow Publishers to support events and handlers
+/// of different types.
+pub trait DynHandleMut {
+    fn dyn_handle_mut(&mut self, event: &dyn DynEvent) -> ();
+}
+
+// Allow any HandleMut object to take any DynEvent object and decide whether to run its handle method.
+// This is what enables the Publisher to take handlers and events of any type — as long as they are
+// all DynHandle/DynHandleMut and DynEvent, the handler can decide whether to handle the event
+impl<T, U> DynHandleMut for U
+where
+    T: Event,
+    U: HandleMut<EventType = T> + Send + Sync + RefUnwindSafe,
+{
+    fn dyn_handle_mut(&mut self, event: &dyn DynEvent) {
+        if let Some(event_data) = event.get_data().downcast_ref::<T>() {
+            self.handle_mut(event_data.clone())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,6 +116,24 @@ mod tests {
         fn handle(&self, event: MyEvent) {
             assert_eq!(event.0, 99);
             *self.called.lock().unwrap() = true;
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MutEvent(pub i32);
+
+    impl Event for MutEvent {}
+
+    struct TestHandleMut {
+        called: Arc<Mutex<bool>>,
+        last_value: Arc<Mutex<Option<i32>>>,
+    }
+
+    impl HandleMut for TestHandleMut {
+        type EventType = MutEvent;
+        fn handle_mut(&mut self, event: MutEvent) {
+            *self.called.lock().unwrap() = true;
+            *self.last_value.lock().unwrap() = Some(event.0);
         }
     }
 
@@ -142,5 +192,36 @@ mod tests {
         DynHandle::dyn_handle(&handler, &other_event);
 
         assert!(!*called.lock().unwrap());
+    }
+    #[test]
+    fn test_dyn_handle_mut_calls_handle_mut_on_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let last_value = Arc::new(Mutex::new(None));
+        let mut handler = TestHandleMut {
+            called: called.clone(),
+            last_value: last_value.clone(),
+        };
+
+        let event = MutEvent(123);
+        DynHandleMut::dyn_handle_mut(&mut handler, &event);
+
+        assert!(*called.lock().unwrap());
+        assert_eq!(*last_value.lock().unwrap(), Some(123));
+    }
+
+    #[test]
+    fn test_dyn_handle_mut_does_not_call_handle_mut_on_non_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let last_value = Arc::new(Mutex::new(None));
+        let mut handler = TestHandleMut {
+            called: called.clone(),
+            last_value: last_value.clone(),
+        };
+
+        let other_event = OtherEvent;
+        DynHandleMut::dyn_handle_mut(&mut handler, &other_event);
+
+        assert!(!*called.lock().unwrap());
+        assert_eq!(*last_value.lock().unwrap(), None);
     }
 }

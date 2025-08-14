@@ -6,6 +6,7 @@ description = "A simple, flexible observer pattern implementation"
 repository = "https://github.com/hollg/gawk"
 homepage = "https://github.com/hollg/gawk"
 license = "MIT"
+readme = "../README.md"
 
 [dependencies]
 gawk_derive = {path = "../gawk_derive", version = "0.1.0"}
