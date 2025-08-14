@@ -1,4 +1,7 @@
-use std::panic::RefUnwindSafe;
+use std::{
+    panic::RefUnwindSafe,
+    sync::{Arc, Mutex},
+};
 
 use crate::{DynEvent, Event};
 
@@ -25,6 +28,24 @@ impl<T: Event> Handler<T> {
         Handler {
             handle: Box::new(f),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct MutEvent(pub i32);
+
+impl Event for MutEvent {}
+
+struct TestHandleMut {
+    called: Arc<Mutex<bool>>,
+    last_value: Arc<Mutex<Option<i32>>>,
+}
+
+impl HandleMut for TestHandleMut {
+    type EventType = MutEvent;
+    fn handle_mut(&mut self, event: MutEvent) {
+        *self.called.lock().unwrap() = true;
+        *self.last_value.lock().unwrap() = Some(event.0);
     }
 }
 
@@ -164,5 +185,36 @@ mod tests {
         DynHandle::dyn_handle(&handler, &other_event);
 
         assert!(!*called.lock().unwrap());
+    }
+    #[test]
+    fn test_dyn_handle_mut_calls_handle_mut_on_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let last_value = Arc::new(Mutex::new(None));
+        let mut handler = TestHandleMut {
+            called: called.clone(),
+            last_value: last_value.clone(),
+        };
+
+        let event = MutEvent(123);
+        DynHandleMut::dyn_handle_mut(&mut handler, &event);
+
+        assert!(*called.lock().unwrap());
+        assert_eq!(*last_value.lock().unwrap(), Some(123));
+    }
+
+    #[test]
+    fn test_dyn_handle_mut_does_not_call_handle_mut_on_non_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let last_value = Arc::new(Mutex::new(None));
+        let mut handler = TestHandleMut {
+            called: called.clone(),
+            last_value: last_value.clone(),
+        };
+
+        let other_event = OtherEvent;
+        DynHandleMut::dyn_handle_mut(&mut handler, &other_event);
+
+        assert!(!*called.lock().unwrap());
+        assert_eq!(*last_value.lock().unwrap(), None);
     }
 }

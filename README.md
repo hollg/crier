@@ -37,46 +37,46 @@ fn main() {
 
 ```
 
-### Subscribe a custom type
+### Subscribe a custom type with a mut handler function
 ```rust
-use gawk::{Event, Publisher, Handle};
+use gawk::{Event, Publisher, HandleMut};
 
 #[derive(Clone, Event)]
 struct Info(String);
 
-struct InfoHandler {}
-
-impl InfoHandler {
-    fn log(&self, event: Info) {
-        println!("Info: {}", event.0)
-    }
+#[derive(Default)]
+struct InfoHandler {
+    count: usize;
 }
 
-impl Handle for InfoHandler {
+impl HandleMut for InfoHandler {
     type EventType = Info;
 
-    fn handle(&self, event: Self::EventType) {
-        self.log(event);
+    fn handle_mut(&mut self, event: Self::EventType) {
+        self.count += 1;
+        println!("Info: {}", event.0)
+        println!("Triggered {} times", self.count);
     }
 }
 
 fn main() {
     let mut publisher = Publisher::default();
-    let info_handler = InfoHandler {};
-    let info_id = publisher.subscribe(info_handler);
+    let info_handler = InfoHandler::default();
+    let info_id = publisher.subscribe_mut(info_handler);
 
     let _ = publisher.publish(Info(String::from("All good"))); 
 
-    publisher.unsubscribe(info_id);
+    publisher.unsubscribe_mut(info_id);
 }
-
 ```
+
+Check out the examples directory for more!
 
 ## TODO:
 - [X] Publisher supports any number of handlers / events of different types
 - [X] Derive macro for `Event` trait
 - [ ] Optional async feature using Tokio
-- [ ] Support handlers that take a `mut &self` receiver when implementing `Handle` for custom types to enable more complex use cases, e.g. updating some internal state when events are received
+- [X] Support handlers that take a `mut &self` receiver when implementing `Handle` for custom types to enable more complex use cases, e.g. updating some internal state when events are received
 
 ## Acknowledgements
 Thanks to [@klaatu01](https://github.com/klaatu01/) for giving me the idea to build this and the coaching I needed to wrangle Rust's type system into allowing events and handlers of multiple different types in a single publisher.
