@@ -5,15 +5,15 @@ use crate::{DynEvent, DynHandle};
 /// Publishes all Events to all subscribed Handlers that accept Events of that type
 /// # Examples
 /// ```
-/// use gawk::{Event, Handler};
+/// use gawk::{Event, Handler, Publisher};
 ///
 /// #[derive(Copy, Clone)]
 /// struct GamePaused {}
 ///
 /// impl Event for GamePaused {}
 ///
+/// let mut publisher = Publisher::default();
 /// let pause_handler = Handler::new(|_event: GamePaused| println!("Game paused"));
-/// let publisher = Publisher::default();
 /// let pause_handler_id = publisher.subscribe(pause_handler);
 ///
 /// publisher.publish(GamePaused {});
@@ -68,14 +68,21 @@ impl Publisher {
                 let handler = Arc::clone(handler);
                 let cloned_event = event.clone();
 
-                handles.push(s.spawn(move || handler.dyn_handle(cloned_event.as_ref())));
+                handles.push(s.spawn(move || {
+                    std::panic::catch_unwind(|| handler.dyn_handle(cloned_event.as_ref()))
+                }));
 
                 if handles.len() == max_threads {
                     for handle in handles.drain(..) {
-                        if let Err(e) = handle.join() {
-                            errors.push(e)
+                        if let Err(e) = handle.join().unwrap_or_else(|e| Err(e)) {
+                            errors.push(e);
                         }
                     }
+                }
+            }
+            for handle in handles {
+                if let Err(e) = handle.join().unwrap_or_else(|e| Err(e)) {
+                    errors.push(e);
                 }
             }
         });
@@ -85,5 +92,68 @@ impl Publisher {
         } else {
             Err(errors)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Event;
+
+    use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone)]
+    struct TestEvent;
+    impl Event for TestEvent {}
+
+    struct TestHandler {
+        called: Arc<Mutex<bool>>,
+    }
+    impl DynHandle for TestHandler {
+        fn dyn_handle(&self, _event: &dyn DynEvent) {
+            let mut called = self.called.lock().unwrap();
+            *called = true;
+        }
+    }
+
+    struct PanicHandler;
+    impl DynHandle for PanicHandler {
+        fn dyn_handle(&self, _event: &dyn DynEvent) {
+            panic!("handler panic");
+        }
+    }
+
+    #[test]
+    fn test_subscribe_and_publish() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandler {
+            called: called.clone(),
+        };
+        publisher.subscribe(handler);
+        let _ = publisher.publish(TestEvent);
+        assert!(*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_unsubscribe() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandler {
+            called: called.clone(),
+        };
+        let id = publisher.subscribe(handler);
+        publisher.unsubscribe(id);
+        let _ = publisher.publish(TestEvent);
+        assert!(!*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_publish_error() {
+        let mut publisher = Publisher::default();
+        publisher.subscribe(PanicHandler);
+        let result = publisher.publish(TestEvent);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().len(), 1);
     }
 }

@@ -1,11 +1,11 @@
-use std::any;
+use std::{any, panic::RefUnwindSafe};
 
 /// An object that a Publisher can send to its subscribers
-pub trait Event: Send + Sync + Clone + 'static {}
+pub trait Event: Send + Sync + Clone + RefUnwindSafe + 'static {}
 
 /// Dynamically typed event. Used internally to alow Publishers to support Handlers and Events of
 /// multiple different types.
-pub trait DynEvent: Send + Sync + 'static {
+pub trait DynEvent: Send + Sync + RefUnwindSafe + 'static {
     fn get_data(&self) -> &dyn any::Any;
 }
 

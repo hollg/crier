@@ -1,3 +1,5 @@
+use std::panic::RefUnwindSafe;
+
 use crate::{DynEvent, Event};
 
 /// Trait for an object which can subscribe to a Producer for specific events
@@ -13,6 +15,8 @@ pub struct Handler<T: Event> {
     handle: Box<dyn Fn(T) + Send + Sync>,
 }
 
+impl<T: Event> RefUnwindSafe for Handler<T> {}
+
 impl<T: Event> Handler<T> {
     pub fn new<F>(f: F) -> Self
     where
@@ -26,7 +30,7 @@ impl<T: Event> Handler<T> {
 
 /// Dynamically typed Handler. Used internally to allow Publishers to support Events and Handlers
 /// of multiple different types.
-pub trait DynHandle: Send + Sync {
+pub trait DynHandle: Send + Sync + RefUnwindSafe {
     fn dyn_handle(&self, event: &dyn DynEvent) -> ();
 }
 
@@ -47,7 +51,7 @@ impl<T: Event> DynHandle for Handler<T> {
 impl<T, U> DynHandle for U
 where
     T: Event,
-    U: Handle<EventType = T> + Send + Sync,
+    U: Handle<EventType = T> + Send + Sync + RefUnwindSafe,
 {
     fn dyn_handle(&self, event: &dyn DynEvent) {
         if let Some(event_data) = event.get_data().downcast_ref::<T>() {
