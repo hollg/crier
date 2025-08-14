@@ -70,6 +70,7 @@ fn main() {
 
 ## TODO:
 - [X] Publisher supports any number of handlers / events of different types
+- [ ] Derive macro for `Event` trait
 - [ ] Optional async feature using Tokio
 - [ ] Support handlers that take a `mut &self` receiver when implementing `Handle` for custom types to enable more complex use cases, e.g. updating some internal state when events are received
 
