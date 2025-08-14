@@ -1,0 +1,1 @@
+std::marker::PhantomData<(dyn std::ops::Fn(T) + std::marker::Send + std::marker::Sync + 'static)>

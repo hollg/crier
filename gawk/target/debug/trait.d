@@ -1,0 +1,1 @@
+/Users/gbgarhol/code/gawk/target/debug/trait: /Users/gbgarhol/code/gawk/src/bin/trait.rs /Users/gbgarhol/code/gawk/src/event.rs /Users/gbgarhol/code/gawk/src/handler.rs /Users/gbgarhol/code/gawk/src/lib.rs /Users/gbgarhol/code/gawk/src/publisher.rs
