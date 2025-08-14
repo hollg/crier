@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["Handler","Publisher"],"trait":["DynEvent","DynHandler","Event"]};

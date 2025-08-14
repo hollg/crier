@@ -1,1 +1,0 @@
-std::result::Result<std::convert::Infallible, std::boxed::Box<dyn std::any::Any + std::marker::Send>>
