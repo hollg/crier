@@ -1,6 +1,6 @@
 [package]
 name = "gawk"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 description = "A simple, flexible observer pattern implementation"
 repository = "https://github.com/hollg/gawk"

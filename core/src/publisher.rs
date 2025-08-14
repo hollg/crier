@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use crate::{handler::DynHandleMut, DynEvent, DynHandle};
+use crate::{DynEvent, DynHandle, handler::DynHandleMut};
 
 /// Publishes all Events to all subscribed Handlers that accept Events of that type
 /// # Examples
@@ -87,31 +87,35 @@ impl Publisher {
         let mut errors = Vec::new();
 
         thread::scope(|s| {
-            let mut handles = Vec::new();
+            let mut active_handles: Vec<
+                thread::ScopedJoinHandle<Result<(), Box<dyn std::any::Any + Send + 'static>>>,
+            > = Vec::new();
+
             for handler in self.handlers.values() {
-                let handler = Arc::clone(handler);
-                let cloned_event = event.clone();
-
-                handles.push(s.spawn(move || {
-                    std::panic::catch_unwind(|| handler.dyn_handle(cloned_event.as_ref()))
-                }));
-
-                if handles.len() == max_threads {
-                    for handle in handles.drain(..) {
-                        if let Err(e) = handle.join().unwrap_or_else(Err) {
-                            errors.push(e);
-                        }
+                // if we hit the max number of threads, join the oldest before spawning a new one
+                if active_handles.len() >= max_threads {
+                    let handle = active_handles.remove(0);
+                    if let Err(e) = handle.join().unwrap_or_else(Err) {
+                        errors.push(e);
                     }
                 }
+
+                let handler = Arc::clone(handler);
+                let cloned_event = event.clone();
+                active_handles.push(s.spawn(move || {
+                    std::panic::catch_unwind(|| handler.dyn_handle(cloned_event.as_ref()))
+                }));
             }
 
-            for handle in handles {
+            for handle in active_handles {
                 if let Err(e) = handle.join().unwrap_or_else(Err) {
                     errors.push(e);
                 }
             }
         });
 
+        // mutable handlers are called in series to prevent problems caused by simultaneous
+        // mutation of the same object
         for handler_mut in self.handlers_mut.values_mut() {
             let handler_mut = Arc::clone(handler_mut);
             let cloned_event = event.clone();

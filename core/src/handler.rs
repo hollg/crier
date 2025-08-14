@@ -1,7 +1,4 @@
-use std::{
-    panic::RefUnwindSafe,
-    sync::{Arc, Mutex},
-};
+use std::panic::RefUnwindSafe;
 
 use crate::{DynEvent, Event};
 
