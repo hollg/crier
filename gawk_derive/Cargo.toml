@@ -2,6 +2,10 @@
 name = "gawk_derive"
 version = "0.1.0"
 edition = "2024"
+description = "Derive traits for the gawk crate"
+repository = "https://github.com/hollg/gawk"
+homepage = "https://github.com/hollg/gawk"
+license = "MIT"
 
 [lib]
 proc-macro = true
