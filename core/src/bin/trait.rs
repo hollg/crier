@@ -1,7 +1,7 @@
 use gawk::{Event, Handle, Publisher};
 
-#[derive(Copy, Clone, Event)]
-struct Info(&'static str);
+#[derive(Clone, Event)]
+struct Info(String);
 
 struct InfoHandler {}
 
@@ -25,7 +25,7 @@ fn main() {
     let info_handler = InfoHandler {};
     let handler_id = publisher.subscribe(info_handler);
 
-    let _ = publisher.publish(Info("All good"));
+    let _ = publisher.publish(Info(String::from("All good")));
 
     publisher.unsubscribe(handler_id);
 }

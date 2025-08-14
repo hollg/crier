@@ -16,10 +16,10 @@
 use gawk::{Event, Handler, Publisher};
 
 #[derive(Clone, Event)]
-struct Warning(&'static str);
+struct Warning(String);
 
 #[derive(Clone, Event)]
-struct Info(&'static str);
+struct Info(String);
 
 fn main() {
     let mut publisher = Publisher::default();
@@ -27,10 +27,10 @@ fn main() {
     let warning_id = publisher.subscribe(warning_handler);
 
     // `publish` returns a Result, the error variant of which contains any errors returned by triggered handlers
-    let _ = publisher.publish(Warning("Looks sus"));
+    let _ = publisher.publish(Warning(String::from("Looks sus")));
 
     // This event will not trigger the warning_handler because it's of the wrong concrete type
-    let _ = publisher.publish(Info("All good"));
+    let _ = publisher.publish(Info(String::from("All good")));
 
     publisher.unsubscribe(warning_id);
 }
@@ -41,8 +41,8 @@ fn main() {
 ```rust
 use gawk::{Event, Publisher, Handle};
 
-#[derive(Copy, Clone, Event)]
-struct Info(&'static str);
+#[derive(Clone, Event)]
+struct Info(String);
 
 struct InfoHandler {}
 
@@ -65,7 +65,7 @@ fn main() {
     let info_handler = InfoHandler {};
     let info_id = publisher.subscribe(info_handler);
 
-    let _ = publisher.publish(Info("All good")); 
+    let _ = publisher.publish(Info(String::from("All good"))); 
 
     publisher.unsubscribe(info_id);
 }

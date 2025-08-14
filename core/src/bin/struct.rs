@@ -2,10 +2,10 @@ use gawk::{Event, Handler, Publisher};
 
 #[allow(dead_code)]
 #[derive(Clone, Event)]
-struct Info(&'static str);
+struct Info(String);
 
 #[derive(Clone, Event)]
-struct Warning(&'static str);
+struct Warning(String);
 
 fn main() {
     let mut publisher = Publisher::default();
@@ -14,11 +14,11 @@ fn main() {
 
     let warning_id = publisher.subscribe(warning_handler);
 
-    let _ = publisher.publish(Warning("Looks sus"));
+    let _ = publisher.publish(Warning(String::from("Looks sus")));
 
     // This event will be ignored by the
     // warning_handler
-    let _ = publisher.publish(Info("All good"));
+    let _ = publisher.publish(Info(String::from("All good")));
 
     publisher.unsubscribe(warning_id);
 }
