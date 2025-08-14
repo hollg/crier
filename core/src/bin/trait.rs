@@ -1,5 +1,4 @@
 use gawk::{Event, Handle, Publisher};
-use gawk_derive::Event;
 
 #[derive(Copy, Clone, Event)]
 struct Info(&'static str);
