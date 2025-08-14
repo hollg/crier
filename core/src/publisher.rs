@@ -126,49 +126,6 @@ impl Publisher {
             Err(errors)
         }
     }
-
-    #[test]
-    fn test_subscribe_mut_and_publish() {
-        let mut publisher = Publisher::default();
-        let called = Arc::new(Mutex::new(false));
-        let handler = TestHandlerMut {
-            called: called.clone(),
-        };
-        publisher.subscribe_mut(handler);
-        let _ = publisher.publish(TestEvent);
-        assert!(*called.lock().unwrap());
-    }
-
-    #[test]
-    fn test_unsubsribe_mut() {
-        let mut publisher = Publisher::default();
-        let called = Arc::new(Mutex::new(false));
-        let handler = TestHandlerMut {
-            called: called.clone(),
-        };
-        let id = publisher.subscribe_mut(handler);
-        publisher.unsubsribe_mut(id);
-        let _ = publisher.publish(TestEvent);
-        assert!(!*called.lock().unwrap());
-    }
-
-    #[test]
-    fn test_publish_to_both_handler_types() {
-        let mut publisher = Publisher::default();
-        let called = Arc::new(Mutex::new(false));
-        let called_mut = Arc::new(Mutex::new(false));
-        let handler = TestHandler {
-            called: called.clone(),
-        };
-        let handler_mut = TestHandlerMut {
-            called: called_mut.clone(),
-        };
-        publisher.subscribe(handler);
-        publisher.subscribe_mut(handler_mut);
-        let _ = publisher.publish(TestEvent);
-        assert!(*called.lock().unwrap());
-        assert!(*called_mut.lock().unwrap());
-    }
 }
 
 #[cfg(test)]
@@ -241,5 +198,48 @@ mod tests {
         let result = publisher.publish(TestEvent);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().len(), 1);
+    }
+
+    #[test]
+    fn test_subscribe_mut_and_publish() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandlerMut {
+            called: called.clone(),
+        };
+        publisher.subscribe_mut(handler);
+        let _ = publisher.publish(TestEvent);
+        assert!(*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_unsubsribe_mut() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandlerMut {
+            called: called.clone(),
+        };
+        let id = publisher.subscribe_mut(handler);
+        publisher.unsubsribe_mut(id);
+        let _ = publisher.publish(TestEvent);
+        assert!(!*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_publish_to_both_handler_types() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let called_mut = Arc::new(Mutex::new(false));
+        let handler = TestHandler {
+            called: called.clone(),
+        };
+        let handler_mut = TestHandlerMut {
+            called: called_mut.clone(),
+        };
+        publisher.subscribe(handler);
+        publisher.subscribe_mut(handler_mut);
+        let _ = publisher.publish(TestEvent);
+        assert!(*called.lock().unwrap());
+        assert!(*called_mut.lock().unwrap());
     }
 }
