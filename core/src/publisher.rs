@@ -66,7 +66,7 @@ impl Publisher {
         self.handlers.remove_entry(&id);
     }
     /// Remove a mut handler from the publisher so that it stops receiving events
-    pub fn unsubsribe_mut(&mut self, id: usize) {
+    pub fn unsubscribe_mut(&mut self, id: usize) {
         self.handlers_mut.remove_entry(&id);
     }
 
@@ -220,7 +220,7 @@ mod tests {
             called: called.clone(),
         };
         let id = publisher.subscribe_mut(handler);
-        publisher.unsubsribe_mut(id);
+        publisher.unsubscribe_mut(id);
         let _ = publisher.publish(TestEvent);
         assert!(!*called.lock().unwrap());
     }
