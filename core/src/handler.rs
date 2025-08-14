@@ -14,7 +14,7 @@ pub trait Handle {
 
 /// Wrapper for code that handles Events of a specific type.
 pub struct Handler<T: Event> {
-    /// Complex seeming type allows closures?
+    // closure that takes T and is thread-safe
     handle: Box<dyn Fn(T) + Send + Sync>,
 }
 
@@ -28,24 +28,6 @@ impl<T: Event> Handler<T> {
         Handler {
             handle: Box::new(f),
         }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-struct MutEvent(pub i32);
-
-impl Event for MutEvent {}
-
-struct TestHandleMut {
-    called: Arc<Mutex<bool>>,
-    last_value: Arc<Mutex<Option<i32>>>,
-}
-
-impl HandleMut for TestHandleMut {
-    type EventType = MutEvent;
-    fn handle_mut(&mut self, event: MutEvent) {
-        *self.called.lock().unwrap() = true;
-        *self.last_value.lock().unwrap() = Some(event.0);
     }
 }
 
@@ -81,16 +63,23 @@ where
     }
 }
 
+/// Trait for an object that can subscribe to a producer for specific events and mutate itself in
+/// its handler function.
 pub trait HandleMut {
     type EventType: Event;
 
     fn handle_mut(&mut self, event: Self::EventType) -> ();
 }
 
+/// Dynamically typed HandleMut. Used internally to allow Publishers to support events and handlers
+/// of different types.
 pub trait DynHandleMut {
     fn dyn_handle_mut(&mut self, event: &dyn DynEvent) -> ();
 }
 
+// Allow any HandleMut object to take any DynEvent object and decide whether to run its handle method.
+// This is what enables the Publisher to take handlers and events of any type — as long as they are
+// all DynHandle/DynHandleMut and DynEvent, the handler can decide whether to handle the event
 impl<T, U> DynHandleMut for U
 where
     T: Event,
@@ -127,6 +116,24 @@ mod tests {
         fn handle(&self, event: MyEvent) {
             assert_eq!(event.0, 99);
             *self.called.lock().unwrap() = true;
+        }
+    }
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MutEvent(pub i32);
+
+    impl Event for MutEvent {}
+
+    struct TestHandleMut {
+        called: Arc<Mutex<bool>>,
+        last_value: Arc<Mutex<Option<i32>>>,
+    }
+
+    impl HandleMut for TestHandleMut {
+        type EventType = MutEvent;
+        fn handle_mut(&mut self, event: MutEvent) {
+            *self.called.lock().unwrap() = true;
+            *self.last_value.lock().unwrap() = Some(event.0);
         }
     }
 
