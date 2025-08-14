@@ -59,3 +59,88 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct MyEvent(pub i32);
+
+    impl Event for MyEvent {}
+
+    #[derive(Clone, Debug)]
+    struct OtherEvent;
+
+    impl Event for OtherEvent {}
+
+    struct TestHandle {
+        called: Arc<Mutex<bool>>,
+    }
+
+    impl Handle for TestHandle {
+        type EventType = MyEvent;
+        fn handle(&self, event: MyEvent) {
+            assert_eq!(event.0, 99);
+            *self.called.lock().unwrap() = true;
+        }
+    }
+
+    #[test]
+    fn test_dyn_handle_calls_handle_on_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let called_clone = called.clone();
+
+        let handler = Handler::new(move |event: MyEvent| {
+            assert_eq!(event.0, 42);
+            *called_clone.lock().unwrap() = true;
+        });
+
+        let event = MyEvent(42);
+        handler.dyn_handle(&event);
+
+        assert!(*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_dyn_handle_does_not_call_handle_on_non_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let called_clone = called.clone();
+
+        let handler = Handler::new(move |_event: MyEvent| {
+            *called_clone.lock().unwrap() = true;
+        });
+
+        let other_event = OtherEvent;
+        handler.dyn_handle(&other_event);
+
+        assert!(!*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_dyn_handle_for_handle_impl_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandle {
+            called: called.clone(),
+        };
+
+        let event = MyEvent(99);
+        DynHandle::dyn_handle(&handler, &event);
+
+        assert!(*called.lock().unwrap());
+    }
+
+    #[test]
+    fn test_dyn_handle_for_handle_impl_non_matching_type() {
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandle {
+            called: called.clone(),
+        };
+
+        let other_event = OtherEvent;
+        DynHandle::dyn_handle(&handler, &other_event);
+
+        assert!(!*called.lock().unwrap());
+    }
+}

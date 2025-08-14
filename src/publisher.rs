@@ -74,14 +74,14 @@ impl Publisher {
 
                 if handles.len() == max_threads {
                     for handle in handles.drain(..) {
-                        if let Err(e) = handle.join().unwrap_or_else(|e| Err(e)) {
+                        if let Err(e) = handle.join().unwrap_or_else(Err) {
                             errors.push(e);
                         }
                     }
                 }
             }
             for handle in handles {
-                if let Err(e) = handle.join().unwrap_or_else(|e| Err(e)) {
+                if let Err(e) = handle.join().unwrap_or_else(Err) {
                     errors.push(e);
                 }
             }
