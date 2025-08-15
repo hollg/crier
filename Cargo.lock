@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "crier"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "crier_derive",
 ]

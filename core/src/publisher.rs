@@ -27,11 +27,14 @@ use crate::{DynEvent, DynHandle, DynHandleMut, Event, Handler};
 #[derive(Default)]
 pub struct Publisher {
     handler_count: usize,
-    handler_mut_count: usize,
-    // we use Arc so that a reference to the handler can be passed to other threads for
-    // execution
-    handlers: HashMap<usize, Arc<dyn DynHandle>>,
-    handlers_mut: HashMap<usize, Arc<Mutex<dyn DynHandleMut>>>,
+    handlers: HashMap<usize, HandlerType>,
+}
+
+/// Represents the different types of handler and how they are stored in the `handlers` map on the
+/// Publisher
+enum HandlerType {
+    Sync(Arc<dyn DynHandle>),
+    SyncMut(Arc<Mutex<dyn DynHandleMut>>),
 }
 
 impl Publisher {
@@ -43,7 +46,8 @@ impl Publisher {
     {
         let handler: Arc<dyn DynHandle> = Arc::new(handler);
         let id = self.handler_count + 1;
-        self.handlers.insert(id, handler);
+        // self.handlers.insert(id, handler);
+        self.handlers.insert(id, HandlerType::Sync(handler));
         self.handler_count = id;
 
         id
@@ -66,9 +70,9 @@ impl Publisher {
         T: DynHandleMut + 'static,
     {
         let handler: Arc<Mutex<dyn DynHandleMut>> = Arc::new(Mutex::new(handler));
-        let id = self.handler_mut_count + 1;
-        self.handlers_mut.insert(id, handler);
-        self.handler_mut_count = id;
+        let id = self.handler_count + 1;
+        self.handlers.insert(id, HandlerType::SyncMut(handler));
+        self.handler_count = id;
 
         id
     }
@@ -79,7 +83,7 @@ impl Publisher {
     }
     /// Remove a mut handler from the publisher so that it stops receiving events
     pub fn unsubscribe_mut(&mut self, id: usize) {
-        self.handlers_mut.remove_entry(&id);
+        self.handlers.remove_entry(&id);
     }
 
     /// Publish an event to all subscribed handlers, utilizing as many threads as possible to run
@@ -104,6 +108,35 @@ impl Publisher {
             > = Vec::new();
 
             for handler in self.handlers.values() {
+                match handler {
+                    HandlerType::Sync(dyn_handle) => {
+                        // if we hit the max number of threads, join the oldest before spawning a new one
+                        if active_handles.len() >= max_threads {
+                            let handle = active_handles.remove(0);
+                            if let Err(e) = handle.join().unwrap_or_else(Err) {
+                                errors.push(e);
+                            }
+                        }
+
+                        let handler_clone = Arc::clone(dyn_handle);
+                        let cloned_event = event.clone();
+                        active_handles.push(s.spawn(move || {
+                            std::panic::catch_unwind(|| {
+                                handler_clone.dyn_handle(cloned_event.as_ref())
+                            })
+                        }));
+                    }
+                    HandlerType::SyncMut(mutex) => {
+                        // mutable handlers are called in series to prevent problems caused by simultaneous
+                        // mutation of the same object
+                        let handler_mut_clone = Arc::clone(mutex);
+                        let cloned_event = event.clone();
+
+                        let mut handler_guard =
+                            handler_mut_clone.lock().expect("Handler mutex poisoned");
+                        handler_guard.dyn_handle_mut(cloned_event.as_ref());
+                    }
+                }
                 // if we hit the max number of threads, join the oldest before spawning a new one
                 if active_handles.len() >= max_threads {
                     let handle = active_handles.remove(0);
@@ -111,12 +144,6 @@ impl Publisher {
                         errors.push(e);
                     }
                 }
-
-                let handler = Arc::clone(handler);
-                let cloned_event = event.clone();
-                active_handles.push(s.spawn(move || {
-                    std::panic::catch_unwind(|| handler.dyn_handle(cloned_event.as_ref()))
-                }));
             }
 
             for handle in active_handles {
@@ -125,16 +152,6 @@ impl Publisher {
                 }
             }
         });
-
-        // mutable handlers are called in series to prevent problems caused by simultaneous
-        // mutation of the same object
-        for handler_mut in self.handlers_mut.values_mut() {
-            let handler_mut = Arc::clone(handler_mut);
-            let cloned_event = event.clone();
-
-            let mut handler_guard = handler_mut.lock().expect("Handler mutex poisoned");
-            handler_guard.dyn_handle_mut(cloned_event.as_ref());
-        }
 
         if errors.is_empty() {
             Ok(())
