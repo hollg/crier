@@ -1,6 +1,6 @@
 [package]
 name = "crier"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2024"
 description = "A simple but flexible observer library"
 repository = "https://github.com/hollg/crier"

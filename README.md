@@ -79,7 +79,7 @@ Check out the examples directory for more!
 - [X] Publisher supports any number of handlers / events of different types
 - [X] Derive macro for `Event` trait
 - [ ] Optional async feature using Tokio
-- [X] Support handlers that take a `mut &self` receiver when implementing `Handle` for custom types to enable more complex use cases, e.g. updating some internal state when events are received
+- [X] Support handlers that take a `mut &self` receiver to enable more complex use cases, e.g. updating some internal state when events are received
 
 ## Acknowledgements
 Thanks to [@klaatu01](https://github.com/klaatu01/) for giving me the idea to build this and the coaching I needed to wrangle Rust's type system into allowing events and handlers of multiple different types in a single publisher.
