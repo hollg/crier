@@ -1,4 +1,4 @@
-use gawk::{Event, Handle, Publisher};
+use crier::{Event, Handle, Publisher};
 
 #[derive(Clone, Event)]
 struct Info(String);

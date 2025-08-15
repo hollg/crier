@@ -1,12 +1,12 @@
 [package]
-name = "gawk"
+name = "crier"
 version = "0.3.2"
 edition = "2024"
-description = "A simple, flexible observer pattern implementation"
-repository = "https://github.com/hollg/gawk"
-homepage = "https://github.com/hollg/gawk"
+description = "A simple but flexible observer library"
+repository = "https://github.com/hollg/crier"
+homepage = "https://github.com/hollg/crier"
 license = "MIT"
 readme = "../README.md"
 
 [dependencies]
-gawk_derive = {path = "../gawk_derive", version = "0.1.0"}
+crier_derive = {path = "../crier_derive", version = "0.1.0"}

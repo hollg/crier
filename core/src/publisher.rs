@@ -4,12 +4,12 @@ use std::{
     thread,
 };
 
-use crate::{DynEvent, DynHandle, handler::DynHandleMut};
+use crate::{DynEvent, DynHandle, DynHandleMut};
 
 /// Publishes all Events to all subscribed Handlers that accept Events of that type
 /// # Examples
 /// ```
-/// use gawk::{Event, Handler, Publisher};
+/// use crier::{Event, Handler, Publisher};
 ///
 /// #[derive(Clone, Event)]
 /// struct GamePaused {}
