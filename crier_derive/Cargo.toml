@@ -1,0 +1,16 @@
+[package]
+name = "crier_derive"
+version = "0.1.0"
+edition = "2024"
+description = "Derive traits for the crier crate"
+repository = "https://github.com/hollg/crier"
+homepage = "https://github.com/hollg/crier"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = "1.0"

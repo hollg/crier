@@ -1,19 +1,19 @@
-# gawk
+# crier
 
-`gawk` is a simple but flexible observer library for Rust.
+`crier` is a simple but flexible observer library for Rust.
 
 ## Goals
 ### Simplicity
-`gawk` has a simple API using basic Rust types. The complex types needed to make it work are all abstracted away from the consumer.
+`crier` has a simple API using basic Rust types. The complex types needed to make it work are all abstracted away from the consumer.
 
 ### Flexibility
-- A `gawk` `Publisher` can handle any number of different types of events and handlers.
-- You can create a handler by wrapping a simple closure in `gawk`'s `Handler` struct, or you can implement the `Handle` trait manually on your own types. You can even do both for different handlers subscribed to the same `Publisher`.
+- A `crier` `Publisher` can handle any number of different types of events and handlers.
+- You can create a handler by wrapping a simple closure in `crier`'s `Handler` struct, or you can implement the `Handle` trait manually on your own types. You can even do both for different handlers subscribed to the same `Publisher`.
 
 ## Usage
 ### Subscribe a simple closure 
 ```rust
-use gawk::{Event, Handler, Publisher};
+use crier::{Event, Handler, Publisher};
 
 #[derive(Clone, Event)]
 struct Warning(String);
@@ -39,7 +39,7 @@ fn main() {
 
 ### Subscribe a custom type with a mut handler function
 ```rust
-use gawk::{Event, Publisher, HandleMut};
+use crier::{Event, Publisher, HandleMut};
 
 #[derive(Clone, Event)]
 struct Info(String);

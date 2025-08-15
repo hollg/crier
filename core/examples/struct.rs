@@ -1,4 +1,4 @@
-use gawk::{Event, Handler, Publisher};
+use crier::{Event, Handler, Publisher};
 
 #[allow(dead_code)]
 #[derive(Clone, Event)]

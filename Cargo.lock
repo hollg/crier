@@ -3,14 +3,14 @@
 version = 4
 
 [[package]]
-name = "gawk"
+name = "crier"
 version = "0.3.2"
 dependencies = [
- "gawk_derive",
+ "crier_derive",
 ]
 
 [[package]]
-name = "gawk_derive"
+name = "crier_derive"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
