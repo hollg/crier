@@ -9,7 +9,7 @@
 ### Flexibility
 - A `Publisher` can handle any number of different types of events and handlers.
 - You have several options when creating handlers:
-  - wrap a simple closure in the `Handler` struct
+  - pass a closure directly to `Publisher`'s `subscribe_with` method
   - implement the `Handle` trait on your own type so that you have access to its other methods and state from the `handle` method
   - implement the `HandleMut` trait on your own type so that you have **mutable** access to its other methods and states from the `handle` method
   - mix and match all of the above
