@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use crate::{DynEvent, DynHandle, DynHandleMut};
+use crate::{DynEvent, DynHandle, DynHandleMut, Event, Handler};
 
 /// Publishes all Events to all subscribed Handlers that accept Events of that type
 /// # Examples
@@ -47,6 +47,18 @@ impl Publisher {
         self.handler_count = id;
 
         id
+    }
+
+    // Subscribe a closure to events of its input type.
+    // Returns the ID needed to `unsubscribe` the handler.
+    pub fn subscribe_with<T, F>(&mut self, handler: F) -> usize
+    where
+        T: Event,
+        F: Fn(T) + Send + Sync + 'static,
+    {
+        let wrapped = Handler::new(handler);
+
+        self.subscribe(wrapped)
     }
 
     pub fn subscribe_mut<T>(&mut self, handler: T) -> usize
@@ -168,6 +180,18 @@ mod tests {
         fn dyn_handle(&self, _event: &dyn DynEvent) {
             panic!("handler panic");
         }
+    }
+
+    #[test]
+    fn test_subscribe_with_and_publish() {
+        let mut publisher = Publisher::default();
+        let called = Arc::new(Mutex::new(false));
+        let handler = TestHandler {
+            called: called.clone(),
+        };
+        publisher.subscribe(handler);
+        let _ = publisher.publish(TestEvent);
+        assert!(*called.lock().unwrap());
     }
 
     #[test]

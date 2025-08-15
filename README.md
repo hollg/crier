@@ -17,7 +17,7 @@
 ## Usage
 ### Subscribe a simple closure 
 ```rust
-use crier::{Event, Handler, Publisher};
+use crier::{Event,  Publisher};
 
 #[derive(Clone, Event)]
 struct Warning(String);
@@ -27,8 +27,7 @@ struct Info(String);
 
 fn main() {
     let mut publisher = Publisher::default();
-    let warning_handler = Handler::new(|warning: Warning| println!("Warning: {}", warning.0));
-    let warning_id = publisher.subscribe(warning_handler);
+    let warning_id = publisher.subscribe_with(|warning: Warning| println!("Warning: {}", warning.0));
 
     // `publish` returns a Result, the error variant of which contains any errors returned by triggered handlers
     let _ = publisher.publish(Warning(String::from("Looks sus")));
