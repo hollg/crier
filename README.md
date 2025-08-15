@@ -7,8 +7,12 @@
 `crier` has a simple API using basic Rust types. The complex types needed to make it work are all abstracted away from the consumer.
 
 ### Flexibility
-- A `crier` `Publisher` can handle any number of different types of events and handlers.
-- You can create a handler by wrapping a simple closure in `crier`'s `Handler` struct, or you can implement the `Handle` trait manually on your own types. You can even do both for different handlers subscribed to the same `Publisher`.
+- A `Publisher` can handle any number of different types of events and handlers.
+- You have several options when creating handlers:
+  - wrap a simple closure in the `Handler` struct
+  - implement the `Handle` trait on your own type so that you have access to its other methods and state from the `handle` method
+  - implement the `HandleMut` trait on your own type so that you have **mutable** access to its other methods and states from the `handle` method
+  - mix and match all of the above
 
 ## Usage
 ### Subscribe a simple closure 
